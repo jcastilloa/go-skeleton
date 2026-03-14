@@ -47,15 +47,21 @@ func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "scaffold",
 		Short: "Generate Go projects from local templates",
-		Long: `scaffold creates new Go projects from this repository templates.
+		Long: `scaffold creates new Go projects from local templates in this repository.
+
+Quick start:
+  1) Build: make scaffold-build
+  2) Generate: ./tools/scaffold/bin/scaffold new --service <name> --module <module> --type <api|cli|mcp>
 
 Template types:
   api  Gin HTTP API with versioned routes (/v1), handlers and server wiring
   cli  Cobra + Viper command-line app scaffold
+  mcp  MCP server scaffold (mcp-go) with Cobra + Viper + DI and sample tools
 
 The generated project folder is: <output>/<service>.`,
 		Example: `  scaffold new --service payments-api --module github.com/acme/payments-api --type api
   scaffold new --service payments-cli --module github.com/acme/payments-cli --type cli
+  scaffold new --service payments-mcp --module github.com/acme/payments-mcp --type mcp
   scaffold new --service billing-api --module github.com/acme/billing-api --output ./projects --force`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -73,14 +79,22 @@ func newCreateCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "new",
-		Short: "Create a project from template/api or template/cli",
+		Short: "Create a project from template/api, template/cli or template/mcp",
 		Long: `Create renders one template into a new project directory.
 
 By default scaffold resolves templates in this order:
 1) ./template/<type> from current working directory
-2) ../../template/<type> relative to the scaffold binary`,
+2) ../../template/<type> relative to the scaffold binary
+
+Required flags:
+  --service <name>   output project directory name
+  --module  <path>   module path used in go.mod and imports
+
+Supported types:
+  api | cli | mcp`,
 		Example: `  scaffold new --service users-api --module github.com/acme/users-api --type api
   scaffold new --service users-cli --module github.com/acme/users-cli --type cli
+  scaffold new --service users-mcp --module github.com/acme/users-mcp --type mcp
   scaffold new --service users-api --module github.com/acme/users-api --template /custom/template/api`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts = normalizeOptions(opts)
@@ -90,7 +104,7 @@ By default scaffold resolves templates in this order:
 
 	cmd.Flags().StringVar(&opts.service, "service", "", "service name, used as output folder name")
 	cmd.Flags().StringVar(&opts.module, "module", "", "Go module path (example: github.com/acme/service)")
-	cmd.Flags().StringVar(&opts.projectType, "type", "api", "template type: api or cli")
+	cmd.Flags().StringVar(&opts.projectType, "type", "api", "template type: api, cli or mcp")
 	cmd.Flags().StringVar(&opts.templateDir, "template", "", "custom template directory; overrides --type")
 	cmd.Flags().StringVar(&opts.outputDir, "output", ".", "base output directory")
 	cmd.Flags().BoolVar(&opts.force, "force", false, "overwrite existing target directory if it already exists")
@@ -174,8 +188,8 @@ func validateOptions(opts options) error {
 	if opts.service == "." || opts.service == ".." {
 		return fmt.Errorf("invalid --service value %q", opts.service)
 	}
-	if opts.projectType != "api" && opts.projectType != "cli" {
-		return fmt.Errorf("invalid --type value %q: expected api or cli", opts.projectType)
+	if opts.projectType != "api" && opts.projectType != "cli" && opts.projectType != "mcp" {
+		return fmt.Errorf("invalid --type value %q: expected api, cli or mcp", opts.projectType)
 	}
 
 	info, err := os.Stat(opts.templateDir)

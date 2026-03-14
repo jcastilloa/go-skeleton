@@ -4,12 +4,12 @@ A scaffolding tool for generating production-ready Go boilerplate projects with 
 
 ## Features
 
-- **Two project types**: HTTP API (Gin) and CLI (Cobra + Viper)
+- **Three project types**: HTTP API (Gin), CLI (Cobra + Viper), and MCP server (mcp-go + Cobra + Viper)
 - **Hexagonal architecture** out of the box — clean separation between `platform`, `shared`, and domain layers
 - **AI agent coverage**: every generated project ships with an `AGENTS.md` and a curated set of coding skills compatible with Codex, Claude, and OpenCode
 - **OpenAI-compatible AI repository** included with retry logic, exponential backoff, JSON mode, and provider abstraction
 - **Configuration via Viper** — YAML files, environment variables, and `.env` support
-- **Dependency injection** in both templates via [sarulabs/di](https://github.com/sarulabs/di)
+- **Dependency injection** in all templates via [sarulabs/di](https://github.com/sarulabs/di)
 - **Single binary, zero runtime dependencies** — the scaffold tool compiles to a standalone Go binary
 
 ## Prerequisites
@@ -38,6 +38,12 @@ make scaffold-build
   --service my-cli \
   --module github.com/acme/my-cli \
   --type cli
+
+# Generate an MCP project
+./tools/scaffold/bin/scaffold new \
+  --service my-mcp \
+  --module github.com/acme/my-mcp \
+  --type mcp
 ```
 
 The generated project is created under `./<service-name>/` by default.
@@ -72,7 +78,7 @@ scaffold new [flags]
 
 | Flag         | Default | Description                                                                 |
 |--------------|---------|-----------------------------------------------------------------------------|
-| `--type`     | `api`   | Template type: `api` or `cli`                                               |
+| `--type`     | `api`   | Template type: `api`, `cli`, or `mcp`                                       |
 | `--output`   | `.`     | Base output directory (project is created at `<output>/<service>`)           |
 | `--template` | —       | Custom template directory; overrides `--type` resolution                    |
 | `--force`    | `false` | Overwrite the target directory if it already exists                         |
@@ -85,6 +91,9 @@ scaffold new --service billing-api --module github.com/acme/billing-api --type a
 
 # CLI project in a custom output folder
 scaffold new --service reports-cli --module github.com/acme/reports-cli --type cli --output ./projects
+
+# MCP project in the current directory
+scaffold new --service assistant-mcp --module github.com/acme/assistant-mcp --type mcp
 
 # Overwrite an existing project
 scaffold new --service billing-api --module github.com/acme/billing-api --force
@@ -184,6 +193,49 @@ Also includes:
 
 - `version` subcommand to print the service version.
 
+### MCP Template (`--type mcp`)
+
+Generates an MCP server skeleton using [`mark3labs/mcp-go`](https://github.com/mark3labs/mcp-go), with Cobra + Viper, dependency injection, and tool wiring ready to extend.
+
+```
+<service>/
+├── AGENTS.md
+├── config.sample.yaml
+├── go.mod / go.sum
+├── cmd/
+│   └── server/
+│       └── main.go                    # Entry point
+├── mcp/
+│   ├── application/
+│   │   └── hello/service.go           # Hello use case
+│   └── domain/
+│       └── hello/repository.go        # Hello domain port
+├── platform/
+│   ├── config/
+│   │   └── viper_repository.go        # Viper-based config reader
+│   ├── di/
+│   │   └── container.go               # Dependency injection container
+│   ├── mcp/
+│   │   ├── commands/root.go           # Cobra runner + version command
+│   │   ├── server/server.go           # MCP server wrapper
+│   │   ├── tools/hello_world.go       # Tool definition + handler
+│   │   └── hello/repository.go        # Infra adapter for hello port
+│   └── openai/
+│       └── openai_repository.go       # OpenAI-compatible AI provider
+├── shared/
+│   ├── ai/domain/                     # Same AI domain contracts
+│   └── config/domain/                 # Service and provider config contracts
+└── .codex/skills/
+```
+
+**Included sample command and tool:**
+
+| Item       | Description                                      |
+|------------|--------------------------------------------------|
+| CLI flag   | `--transport` (default `stdio`)                 |
+| Subcommand | `version`                                       |
+| MCP tool   | `hello_world(name)`                             |
+
 ## Running a Generated Project
 
 ### API
@@ -202,6 +254,14 @@ The server starts at `http://0.0.0.0:8080/v1` by default.
 cd my-cli
 cp config.sample.yaml config.yaml   # Edit with your values
 go run ./cmd/cli/... --prompt "Hello, world!"
+```
+
+### MCP
+
+```bash
+cd my-mcp
+cp config.sample.yaml config.yaml   # Edit with your values
+go run ./cmd/server/... --transport stdio
 ```
 
 ## Configuration
@@ -235,7 +295,7 @@ openai:
 
 ## Architecture
 
-Both templates follow a **hexagonal (ports & adapters)** layout:
+All templates follow a **hexagonal (ports & adapters)** layout:
 
 ```
 cmd/           → Application bootstrap (main.go)
@@ -301,6 +361,7 @@ go-skeleton/
 └── template/
     ├── api/                  # API project template
     ├── cli/                  # CLI project template
+    ├── mcp/                  # MCP project template
     └── skills/               # Shared AI coding skills
 ```
 

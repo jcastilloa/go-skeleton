@@ -9,7 +9,7 @@ help:
 	@echo "  make scaffold-clean"
 	@echo ""
 	@echo "Usage after build:"
-	@echo "  $(SCAFFOLD_BIN) new --service <name> --module <module> --type <api|cli> [--output .] [--force]"
+	@echo "  $(SCAFFOLD_BIN) new --service <name> --module <module> --type <api|cli|mcp> [--output .] [--force]"
 
 scaffold-build:
 	@mkdir -p $(dir $(SCAFFOLD_BIN))
