@@ -84,7 +84,7 @@ func newCreateCommand() *cobra.Command {
 
 By default scaffold resolves templates in this order:
 1) ./template/<type> from current working directory
-2) ../../template/<type> relative to the scaffold binary
+2) nearest ancestor containing template/<type> relative to the scaffold binary
 
 Required flags:
   --service <name>   output project directory name
@@ -159,20 +159,60 @@ func normalizeOptions(opts options) options {
 	}
 
 	exePath, err := os.Executable()
-	if err != nil {
-		opts.templateDir = cwdCandidate
-		return opts
+	if err == nil {
+		if binaryCandidate := findTemplateDirFromExecutable(exePath, opts.projectType); binaryCandidate != "" {
+			opts.templateDir = binaryCandidate
+			return opts
+		}
 	}
 
-	binaryCandidate := filepath.Join(filepath.Dir(exePath), "..", "..", "template", opts.projectType)
-	binaryCandidate = filepath.Clean(binaryCandidate)
-	if dirExists(binaryCandidate) {
+	if binaryCandidate := findTemplateDirFromInvocation(os.Args, opts.projectType); binaryCandidate != "" {
 		opts.templateDir = binaryCandidate
 		return opts
 	}
 
 	opts.templateDir = cwdCandidate
 	return opts
+}
+
+func findTemplateDirFromExecutable(exePath, projectType string) string {
+	current := filepath.Dir(exePath)
+	for range 8 {
+		candidate := filepath.Join(current, "template", projectType)
+		if dirExists(candidate) {
+			return candidate
+		}
+
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+
+	return ""
+}
+
+func findTemplateDirFromInvocation(args []string, projectType string) string {
+	if len(args) == 0 {
+		return ""
+	}
+
+	arg0 := strings.TrimSpace(args[0])
+	if arg0 == "" {
+		return ""
+	}
+
+	absPath, err := filepath.Abs(arg0)
+	if err != nil {
+		return ""
+	}
+
+	if resolved, err := filepath.EvalSymlinks(absPath); err == nil {
+		absPath = resolved
+	}
+
+	return findTemplateDirFromExecutable(absPath, projectType)
 }
 
 func validateOptions(opts options) error {
