@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v1.12.0
+	github.com/sarulabs/di v2.0.0+incompatible
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 )

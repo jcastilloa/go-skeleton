@@ -16,8 +16,8 @@ Before making changes in this repository, load and apply these local skills:
 
 Notes:
 
-- The scaffold copies these skills into `.codex/skills/`.
-- `.claude/skills` and `.opencode/skills` are symlinks to `.codex/skills`.
+- The scaffold reads these skills from `template/skills/` in this repository and copies them into `.codex/skills/` in the generated project.
+- `.claude/skills` and `.opencode/skills` are symlinks to `.codex/skills` in the generated project.
 
 ## Structure
 
@@ -27,6 +27,7 @@ Notes:
 ├── platform/
 │   ├── cli/commands/
 │   ├── config/
+│   ├── di/
 │   └── openai/
 └── shared/
     ├── ai/domain/
@@ -36,7 +37,7 @@ Notes:
 ## CLI Convention
 
 - Entry point: `cmd/cli/main.go`.
-- Commands live in `platform/cli/commands/`.
+- Commands live in `platform/cli/commands/` and are resolved via DI.
 - Flags are defined with `cobra` and bound with `viper`.
 
 Included sample flags:
@@ -45,7 +46,6 @@ Included sample flags:
 - `--system`
 - `--model`
 - `--json`
-- `--service`
 
 ## Adding New Commands
 
